@@ -1,70 +1,68 @@
 const Groq = require("groq-sdk");
+const Knowledge = require("../models/Knowledge");
+
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
-
-const Business = require("../models/Business");
 
 const chatWithAI = async (req, res) => {
   try {
     const { message } = req.body;
 
-    // Load user's business profile
-    const business = await Business.findOne({
+    if (!message) {
+      return res.status(400).json({
+        message: "Message is required",
+      });
+    }
+
+    // Load company knowledge for this user
+    const knowledgeItems = await Knowledge.find({
       userId: req.user.id,
     });
 
-    let systemPrompt = `
-You are an AI Business Assistant.
-
-Help the user with:
-- Marketing
-- Sales
-- Customer support
-- Business growth
-- Content creation
-- Strategy
-`;
-
-    if (business) {
-      systemPrompt += `
-
-Business Information:
-
-Business Name: ${business.businessName}
-Industry: ${business.industry}
-Products: ${business.products}
-Services: ${business.services}
-Target Audience: ${business.targetAudience}
-Website: ${business.website}
-
-Always tailor your answers specifically for this business.
-`;
-    }
+    const companyKnowledge = knowledgeItems
+      .map((item) => item.content)
+      .join("\n\n");
 
     const completion =
       await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+
         messages: [
           {
             role: "system",
-            content: systemPrompt,
+            content: `
+You are an AI Business Assistant.
+
+Use the company knowledge below whenever it is relevant.
+
+Company Knowledge:
+${companyKnowledge}
+
+Rules:
+- Prefer company knowledge when answering.
+- If the answer is not in company knowledge, provide a helpful general answer.
+- Be professional and concise.
+`,
           },
+
           {
             role: "user",
             content: message,
           },
         ],
 
-        model: "llama-3.3-70b-versatile",
+        temperature: 0.7,
       });
 
-    res.json({
-      reply:
-        completion.choices[0].message.content,
-    });
+    const reply =
+      completion.choices[0].message.content;
 
+    res.json({
+      reply,
+    });
   } catch (error) {
-    console.log(error);
+    console.error(error);
 
     res.status(500).json({
       message: error.message,

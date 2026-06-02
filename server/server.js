@@ -13,6 +13,14 @@ const leadRoutes = require("./routes/leadRoutes");
 const dashboardRoutes = require(
   "./routes/dashboardRoutes"
 );
+const crmAiRoutes = require(
+  "./routes/crmAiRoutes"
+);
+const knowledgeRoutes =
+  require("./routes/knowledgeRoutes");
+const uploadRoutes =
+  require("./routes/uploadRoutes");
+const leadAiRoutes = require("./routes/leadAiRoutes");
 
 
 
@@ -31,6 +39,19 @@ app.use(
   "/api/dashboard",
   dashboardRoutes
 );
+app.use(
+  "/api/crm-ai",
+  crmAiRoutes
+);
+app.use(
+  "/api/knowledge",
+  knowledgeRoutes
+);
+app.use(
+  "/api/upload",
+  uploadRoutes
+);
+app.use("/api/leads-ai", leadAiRoutes);
 
 app.get("/", (req, res) => {
   res.send("AI Business OS API");

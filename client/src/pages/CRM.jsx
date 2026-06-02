@@ -10,30 +10,91 @@ function CRM() {
     email: "",
     phone: "",
     company: "",
+    notes: "",
+    followUpDate: "",
   });
 
+  const [aiOutput, setAiOutput] = useState("");
+  const [loadingAi, setLoadingAi] = useState(false);
+
+  // LOAD LEADS
   const loadLeads = async () => {
-    const res = await api.get("/leads");
-    setLeads(res.data);
+    try {
+      const res = await api.get("/leads");
+      setLeads(res.data);
+    } catch (err) {
+      console.log(err);
+    }
   };
 
   useEffect(() => {
     loadLeads();
   }, []);
 
+  // ADD LEAD
   const addLead = async () => {
-    if (!form.name) return;
+    try {
+      if (!form.name) return;
 
-    await api.post("/leads", form);
+      await api.post("/leads", form);
 
-    setForm({
-      name: "",
-      email: "",
-      phone: "",
-      company: "",
-    });
+      setForm({
+        name: "",
+        email: "",
+        phone: "",
+        company: "",
+        notes: "",
+        followUpDate: "",
+      });
 
-    loadLeads();
+      loadLeads();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  // UPDATE STATUS
+  const updateStatus = async (id, status) => {
+    try {
+      await api.put(`/leads/${id}`, { status });
+      loadLeads();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  // DELETE LEAD
+  const deleteLead = async (id) => {
+    try {
+      const confirmDelete = window.confirm(
+        "Delete this lead?"
+      );
+
+      if (!confirmDelete) return;
+
+      await api.delete(`/leads/${id}`);
+      loadLeads();
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  // AI LEAD ANALYSIS
+  const analyzeLead = async (id) => {
+    try {
+      setLoadingAi(true);
+      setAiOutput("");
+
+      const res = await api.post(
+        `/leads-ai/score/${id}`
+      );
+
+      setAiOutput(res.data.analysis);
+    } catch (err) {
+      console.log(err);
+    } finally {
+      setLoadingAi(false);
+    }
   };
 
   return (
@@ -43,12 +104,17 @@ function CRM() {
       <div className="flex-1 p-8 bg-slate-100 min-h-screen">
 
         <h1 className="text-3xl font-bold mb-6">
-          CRM
+          CRM Management
         </h1>
 
+        {/* ADD LEAD FORM */}
         <div className="bg-white p-6 rounded-xl shadow mb-8">
 
-          <div className="grid grid-cols-2 gap-4">
+          <h2 className="text-xl font-semibold mb-4">
+            Add New Lead
+          </h2>
+
+          <div className="grid md:grid-cols-2 gap-4">
 
             <input
               placeholder="Name"
@@ -98,50 +164,67 @@ function CRM() {
               className="border p-3 rounded"
             />
 
+            <input
+              type="date"
+              value={form.followUpDate}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  followUpDate: e.target.value,
+                })
+              }
+              className="border p-3 rounded"
+            />
+
+            <input
+              placeholder="Notes"
+              value={form.notes}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  notes: e.target.value,
+                })
+              }
+              className="border p-3 rounded"
+            />
+
           </div>
 
           <button
             onClick={addLead}
-            className="mt-4 bg-indigo-600 text-white px-6 py-3 rounded"
+            className="mt-4 bg-indigo-600 text-white px-6 py-3 rounded-lg"
           >
             Add Lead
           </button>
 
         </div>
 
-        <div className="bg-white rounded-xl shadow">
+        {/* LEADS TABLE */}
+        <div className="bg-white rounded-xl shadow overflow-hidden">
 
           <table className="w-full">
 
-            <thead>
-
-              <tr className="border-b">
-
-                <th className="p-4 text-left">
-                  Name
-                </th>
-
-                <th className="p-4 text-left">
-                  Company
-                </th>
-
-                <th className="p-4 text-left">
-                  Status
-                </th>
-
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-4 text-left">Name</th>
+                <th className="p-4 text-left">Company</th>
+                <th className="p-4 text-left">Status</th>
+                <th className="p-4 text-left">Follow Up</th>
+                <th className="p-4 text-left">Actions</th>
               </tr>
-
             </thead>
 
             <tbody>
-
               {leads.map((lead) => (
-                <tr
-                  key={lead._id}
-                  className="border-b"
-                >
+                <tr key={lead._id} className="border-t">
+
                   <td className="p-4">
-                    {lead.name}
+                    <div className="font-medium">
+                      {lead.name}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {lead.email}
+                    </div>
                   </td>
 
                   <td className="p-4">
@@ -149,16 +232,75 @@ function CRM() {
                   </td>
 
                   <td className="p-4">
-                    {lead.status}
+                    <select
+                      value={lead.status}
+                      onChange={(e) =>
+                        updateStatus(
+                          lead._id,
+                          e.target.value
+                        )
+                      }
+                      className="border p-2 rounded"
+                    >
+                      <option>New</option>
+                      <option>Contacted</option>
+                      <option>Qualified</option>
+                      <option>Won</option>
+                      <option>Lost</option>
+                    </select>
                   </td>
+
+                  <td className="p-4">
+                    {lead.followUpDate
+                      ? new Date(
+                          lead.followUpDate
+                        ).toLocaleDateString()
+                      : "-"}
+                  </td>
+
+                  <td className="p-4 flex gap-2">
+
+                    <button
+                      onClick={() =>
+                        deleteLead(lead._id)
+                      }
+                      className="bg-red-600 text-white px-3 py-2 rounded"
+                    >
+                      Delete
+                    </button>
+
+                    <button
+                      onClick={() =>
+                        analyzeLead(lead._id)
+                      }
+                      className="bg-blue-600 text-white px-3 py-2 rounded"
+                    >
+                      Analyze
+                    </button>
+
+                  </td>
+
                 </tr>
               ))}
-
             </tbody>
 
           </table>
-
         </div>
+
+        {/* AI OUTPUT */}
+        {(loadingAi || aiOutput) && (
+          <div className="bg-white p-6 rounded-xl shadow mt-8 whitespace-pre-wrap">
+
+            <h2 className="text-xl font-bold mb-2">
+              AI Lead Analysis
+            </h2>
+
+            {loadingAi
+              ? "Analyzing lead..."
+              : aiOutput}
+
+          </div>
+        )}
 
       </div>
     </div>

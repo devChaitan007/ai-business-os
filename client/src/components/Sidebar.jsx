@@ -80,6 +80,12 @@ function Sidebar() {
       >
         CRM
     </NavLink>
+    <NavLink
+       to="/knowledge-base"
+       className={linkClass}
+    >
+       Knowledge Base
+    </NavLink>
 
       </div>
 

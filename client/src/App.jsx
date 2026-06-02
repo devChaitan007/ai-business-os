@@ -10,6 +10,7 @@ import ProposalGenerator from "./pages/ProposalGenerator";
 import SocialMediaGenerator from "./pages/SocialMediaGenerator";
 import InvoiceGenerator from "./pages/InvoiceGenerator";
 import CRM from "./pages/CRM";
+import KnowledgeBase from "./pages/KnowledgeBase";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -76,6 +77,14 @@ function App() {
   element={
     <ProtectedRoute>
       <InvoiceGenerator />
+    </ProtectedRoute>
+  }
+/>
+<Route
+  path="/knowledge-base"
+  element={
+    <ProtectedRoute>
+      <KnowledgeBase />
     </ProtectedRoute>
   }
 />
