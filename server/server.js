@@ -21,6 +21,9 @@ const knowledgeRoutes =
 const uploadRoutes =
   require("./routes/uploadRoutes");
 const leadAiRoutes = require("./routes/leadAiRoutes");
+const knowledgeAiRoutes = require(
+  "./routes/knowledgeAiRoutes"
+);
 
 
 
@@ -52,6 +55,10 @@ app.use(
   uploadRoutes
 );
 app.use("/api/leads-ai", leadAiRoutes);
+app.use(
+  "/api/knowledge-ai",
+  knowledgeAiRoutes
+);
 
 app.get("/", (req, res) => {
   res.send("AI Business OS API");

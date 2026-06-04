@@ -4,8 +4,11 @@ import api from "../services/api";
 
 function KnowledgeBase() {
   const [items, setItems] = useState([]);
-
   const [pdf, setPdf] = useState(null);
+
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [loadingAi, setLoadingAi] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
@@ -27,7 +30,10 @@ function KnowledgeBase() {
 
   const saveKnowledge = async () => {
     try {
-      if (!form.title || !form.content) return;
+      if (!form.title || !form.content) {
+        alert("Please fill all fields");
+        return;
+      }
 
       await api.post("/knowledge", form);
 
@@ -37,8 +43,11 @@ function KnowledgeBase() {
       });
 
       loadKnowledge();
+
+      alert("Knowledge saved successfully");
     } catch (err) {
       console.log(err);
+      alert("Failed to save knowledge");
     }
   };
 
@@ -72,6 +81,33 @@ function KnowledgeBase() {
     } catch (err) {
       console.log(err);
       alert("Upload failed");
+    }
+  };
+
+  const askKnowledge = async () => {
+    try {
+      if (!question.trim()) return;
+
+      setLoadingAi(true);
+      setAnswer("");
+
+      const res = await api.post(
+        "/knowledge-ai/ask",
+        {
+          question,
+        }
+      );
+
+      setAnswer(res.data.answer);
+
+    } catch (err) {
+      console.log(err);
+
+      setAnswer(
+        "Unable to get answer from knowledge base."
+      );
+    } finally {
+      setLoadingAi(false);
     }
   };
 
@@ -120,7 +156,7 @@ function KnowledgeBase() {
 
           <button
             onClick={saveKnowledge}
-            className="mt-4 bg-indigo-600 text-white px-6 py-3 rounded"
+            className="mt-4 bg-indigo-600 text-white px-6 py-3 rounded-lg"
           >
             Save Knowledge
           </button>
@@ -145,10 +181,55 @@ function KnowledgeBase() {
 
           <button
             onClick={uploadPDF}
-            className="ml-4 bg-green-600 text-white px-5 py-2 rounded"
+            className="ml-4 bg-green-600 text-white px-5 py-2 rounded-lg"
           >
             Upload PDF
           </button>
+
+        </div>
+
+        {/* AI KNOWLEDGE CHAT */}
+
+        <div className="bg-white p-6 rounded-xl shadow mb-8">
+
+          <h2 className="text-xl font-semibold mb-4">
+            Ask Your Knowledge Base
+          </h2>
+
+          <textarea
+            rows={4}
+            placeholder="Ask a question about your uploaded documents..."
+            value={question}
+            onChange={(e) =>
+              setQuestion(e.target.value)
+            }
+            className="w-full border p-3 rounded"
+          />
+
+          <button
+            onClick={askKnowledge}
+            className="mt-4 bg-purple-600 text-white px-6 py-3 rounded-lg"
+          >
+            Ask AI
+          </button>
+
+          {(loadingAi || answer) && (
+            <div className="mt-6 border rounded-lg p-4 bg-gray-50">
+
+              <h3 className="font-semibold mb-3">
+                AI Answer
+              </h3>
+
+              {loadingAi ? (
+                <p>Thinking...</p>
+              ) : (
+                <div className="whitespace-pre-wrap">
+                  {answer}
+                </div>
+              )}
+
+            </div>
+          )}
 
         </div>
 
@@ -172,7 +253,10 @@ function KnowledgeBase() {
 
                 <p className="mt-3 text-gray-600 whitespace-pre-wrap">
                   {item.content.length > 500
-                    ? item.content.slice(0, 500) + "..."
+                    ? item.content.slice(
+                        0,
+                        500
+                      ) + "..."
                     : item.content}
                 </p>
               </div>
