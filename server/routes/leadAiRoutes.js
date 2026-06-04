@@ -31,20 +31,21 @@ Notes: ${lead.notes || "N/A"}
 `;
 
     const aiRes = await fetch("http://localhost:5000/api/ai/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message: text,
-      }),
-    });
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: req.headers.authorization,
+  },
+  body: JSON.stringify({
+    message: text,
+  }),
+});
 
-    const data = await aiRes.json();
+    const data = await aiRes.json()
 
-    res.json({
-      analysis: data.reply,
-    });
+res.json({
+  analysis: data.reply || JSON.stringify(data),
+});
 
   } catch (error) {
     console.log(error);

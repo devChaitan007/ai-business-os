@@ -80,22 +80,39 @@ function CRM() {
   };
 
   // AI LEAD ANALYSIS
-  const analyzeLead = async (id) => {
-    try {
-      setLoadingAi(true);
-      setAiOutput("");
+ const analyzeLead = async (id) => {
+  try {
+    console.log("Analyzing Lead ID:", id);
 
-      const res = await api.post(
-        `/leads-ai/score/${id}`
+    setLoadingAi(true);
+    setAiOutput("");
+
+    const res = await api.post(
+      `/leads-ai/score/${id}`
+    );
+
+    console.log("API Response:", res.data);
+
+    setAiOutput(res.data.analysis);
+
+  } catch (err) {
+    console.log("ANALYZE ERROR:", err);
+
+    if (err.response) {
+      console.log(
+        "SERVER RESPONSE:",
+        err.response.data
       );
-
-      setAiOutput(res.data.analysis);
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoadingAi(false);
     }
-  };
+
+    setAiOutput(
+      "Analysis failed. Check browser console."
+    );
+
+  } finally {
+    setLoadingAi(false);
+  }
+};
 
   return (
     <div className="flex">
